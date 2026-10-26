@@ -1,7 +1,12 @@
-local Players = game:GetService("Players")
 
+local Players = game:GetService("Players")
 local player = Players.LocalPlayer
+
+local TARGET = 50
+local SEARCH_DELAY = 0.2
 local enabled = false
+local collected = 0
+local currentTarget = nil
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "DAKAR"
@@ -9,61 +14,47 @@ gui.ResetOnSpawn = false
 
 local button = Instance.new("TextButton")
 button.Name = "Toggle"
-button.Size = UDim2.new(0, 140, 0, 45)
+button.Size = UDim2.new(0, 165, 0, 48)
 button.Position = UDim2.new(0, 20, 0.5, 0)
 button.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 button.TextColor3 = Color3.fromRGB(255, 255, 255)
-button.TextSize = 18
+button.TextSize = 17
 button.Font = Enum.Font.GothamBold
 button.Text = "DAKAR: OFF"
 button.Parent = gui
 
 local function isCandy(obj)
     local name = obj.Name:lower()
-    return name:find("candy")
-        or name:find("sweet")
-        or name:find("dulce")
+
+    return obj:IsA("BasePart")
+        and obj.CanTouch
+        and (
+            name:find("candy")
+            or name:find("sweet")
+            or name:find("dulce")
+        )
 end
-
-local function startScript()
-    print("DAKAR activado")
-end
-
-local function stopScript()
-    print("DAKAR desactivado")
-end
-
-button.Activated:Connect(function()
-    enabled = not enabled
-
-    button.Text = enabled and "DAKAR: ON" or "DAKAR: OFF"
-    button.BackgroundColor3 = enabled
-        and Color3.fromRGB(30, 100, 55)
-        or Color3.fromRGB(25, 25, 25)
-        
-local target = nil
 
 local function findCandy()
     local character = player.Character
-    local root = character and character:FindFirstChild("HumanoidRootPart")
-    if not root then return nil end
+    local root = character
+        and character:FindFirstChild("HumanoidRootPart")
+
+    if not root then
+        return nil
+    end
 
     local closest = nil
-    local distance = math.huge
+    local shortest = math.huge
 
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.CanTouch then
-            local name = obj.Name:lower()
+        if isCandy(obj) then
+            local distance =
+                (obj.Position - root.Position).Magnitude
 
-            if name:find("candy")
-                or name:find("sweet")
-                or name:find("dulce") then
-
-                local d = (obj.Position - root.Position).Magnitude
-                if d < distance then
-                    distance = d
-                    closest = obj
-                end
+            if distance < shortest then
+                shortest = distance
+                closest = obj
             end
         end
     end
@@ -71,43 +62,74 @@ local function findCandy()
     return closest
 end
 
+local function updateButton()
+    if enabled then
+        button.Text = "DAKAR: ON"
+        button.BackgroundColor3 =
+            Color3.fromRGB(30, 100, 55)
+    else
+        button.Text = "DAKAR: OFF"
+        button.BackgroundColor3 =
+            Color3.fromRGB(25, 25, 25)
+    end
+end
 
 local function startScript()
     task.spawn(function()
         while enabled do
+            if collected >= TARGET then
+                enabled = false
+                updateButton()
+                break
+            end
+
             local character = player.Character
             local humanoid = character
                 and character:FindFirstChildOfClass("Humanoid")
+            local root = character
+                and character:FindFirstChild("HumanoidRootPart")
 
-            if humanoid then
-                local candy = findCandy()
+            if humanoid and root then
+                if not currentTarget
+                    or not currentTarget.Parent then
 
-                if candy then
-                    humanoid:MoveTo(candy.Position)
+                    currentTarget = findCandy()
 
-                    repeat
-                        task.wait(0.25)
-                        character = player.Character
-                        humanoid = character
-                            and character:FindFirstChildOfClass("Humanoid")
-                    until not enabled
-                        or not candy.Parent
-                        or not humanoid
-                        or (character:FindFirstChild("HumanoidRootPart")
-                            and (character.HumanoidRootPart.Position
-                            - candy.Position).Magnitude < 4)
-                else
-                    task.wait(1)
+                    if currentTarget then
+                        humanoid:MoveTo(currentTarget.Position)
+                    end
+                elseif currentTarget.Parent then
+                    humanoid:MoveTo(currentTarget.Position)
+
+                    if (root.Position -
+                        currentTarget.Position).Magnitude < 4 then
+                        currentTarget = nil
+                    end
                 end
-            else
-                task.wait(1)
             end
 
-            task.wait(0.25)
+            task.wait(SEARCH_DELAY)
         end
     end)
 end
 
 local function stopScript()
-    -- El bucle se detiene al poner enabled en false.
-        end
+    currentTarget = nil
+end
+
+button.Activated:Connect(function()
+    enabled = not enabled
+    updateButton()
+
+    if enabled then
+        startScript()
+    else
+        stopScript()
+    end
+end)
+
+player.CharacterAdded:Connect(function()
+    currentTarget = nil
+end)
+
+gui.Parent = player:WaitForChild("PlayerGui")
