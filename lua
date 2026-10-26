@@ -1,1 +1,1 @@
-
+print("Dakar cargado correctamente!")
