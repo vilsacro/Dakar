@@ -19,6 +19,15 @@ button.Font = Enum.Font.GothamBold
 button.Text = "DAKAR: OFF"
 button.Parent = gui
 
+-- Conectá aquí las funciones que quieras controlar.
+local function startScript()
+    print("DAKAR activado")
+end
+
+local function stopScript()
+    print("DAKAR desactivado")
+end
+
 button.Activated:Connect(function()
     enabled = not enabled
 
@@ -26,6 +35,12 @@ button.Activated:Connect(function()
     button.BackgroundColor3 = enabled
         and Color3.fromRGB(30, 100, 55)
         or Color3.fromRGB(25, 25, 25)
+
+    if enabled then
+        startScript()
+    else
+        stopScript()
+    end
 end)
 
 gui.Parent = player:WaitForChild("PlayerGui")
