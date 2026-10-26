@@ -71,6 +71,7 @@ local function findCandy()
     return closest
 end
 
+
 local function startScript()
     task.spawn(function()
         while enabled do
@@ -78,27 +79,35 @@ local function startScript()
             local humanoid = character
                 and character:FindFirstChildOfClass("Humanoid")
 
-            target = findCandy()
+            if humanoid then
+                local candy = findCandy()
 
-            if humanoid and target then
-                humanoid:MoveTo(target.Position)
+                if candy then
+                    humanoid:MoveTo(candy.Position)
+
+                    repeat
+                        task.wait(0.25)
+                        character = player.Character
+                        humanoid = character
+                            and character:FindFirstChildOfClass("Humanoid")
+                    until not enabled
+                        or not candy.Parent
+                        or not humanoid
+                        or (character:FindFirstChild("HumanoidRootPart")
+                            and (character.HumanoidRootPart.Position
+                            - candy.Position).Magnitude < 4)
+                else
+                    task.wait(1)
+                end
+            else
+                task.wait(1)
             end
 
-            task.wait(1)
+            task.wait(0.25)
         end
     end)
 end
 
 local function stopScript()
-    local character = player.Character
-    local humanoid = character
-        and character:FindFirstChildOfClass("Humanoid")
-
-    if humanoid then
-        humanoid:MoveTo(
-            character:FindFirstChild("HumanoidRootPart").Position
-        )
-    end
+    -- El bucle se detiene al poner enabled en false.
         end
-
-gui.Parent = player:WaitForChild("PlayerGui")
