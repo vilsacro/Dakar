@@ -1,7 +1,7 @@
 
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
 
+local player = Players.LocalPlayer
 local enabled = false
 
 local gui = Instance.new("ScreenGui")
@@ -19,7 +19,13 @@ button.Font = Enum.Font.GothamBold
 button.Text = "DAKAR: OFF"
 button.Parent = gui
 
--- Conectá aquí las funciones que quieras controlar.
+local function isCandy(obj)
+    local name = obj.Name:lower()
+    return name:find("candy")
+        or name:find("sweet")
+        or name:find("dulce")
+end
+
 local function startScript()
     print("DAKAR activado")
 end
