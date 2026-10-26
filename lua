@@ -1,4 +1,3 @@
-
 local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
@@ -41,12 +40,65 @@ button.Activated:Connect(function()
     button.BackgroundColor3 = enabled
         and Color3.fromRGB(30, 100, 55)
         or Color3.fromRGB(25, 25, 25)
+        
+local target = nil
 
-    if enabled then
-        startScript()
-    else
-        stopScript()
+local function findCandy()
+    local character = player.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+
+    local closest = nil
+    local distance = math.huge
+
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.CanTouch then
+            local name = obj.Name:lower()
+
+            if name:find("candy")
+                or name:find("sweet")
+                or name:find("dulce") then
+
+                local d = (obj.Position - root.Position).Magnitude
+                if d < distance then
+                    distance = d
+                    closest = obj
+                end
+            end
+        end
     end
-end)
+
+    return closest
+end
+
+local function startScript()
+    task.spawn(function()
+        while enabled do
+            local character = player.Character
+            local humanoid = character
+                and character:FindFirstChildOfClass("Humanoid")
+
+            target = findCandy()
+
+            if humanoid and target then
+                humanoid:MoveTo(target.Position)
+            end
+
+            task.wait(1)
+        end
+    end)
+end
+
+local function stopScript()
+    local character = player.Character
+    local humanoid = character
+        and character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid then
+        humanoid:MoveTo(
+            character:FindFirstChild("HumanoidRootPart").Position
+        )
+    end
+        end
 
 gui.Parent = player:WaitForChild("PlayerGui")
